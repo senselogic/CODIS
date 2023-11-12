@@ -1,0 +1,66 @@
+{
+    "name": "Codis",
+    "displayName": "Codis",
+    "description": "Code formatter",
+    "publisher": "SenseLogic",
+    "repository": "https://github.com/senselogic/CODIS.git",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.54.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [],
+    "main": "./extension.js",
+    "contributes": {
+        "views": {
+            "explorer": [
+                {
+                    "id": "Codis",
+                    "name": "Tabs",
+                    "when": "!searchView"
+                }
+            ]
+        },
+        "menus": {
+        "view/item/context": [
+            {
+                "command": "extension.openInExplorer",
+                "when": "view == Codis && viewItem == folder",
+                "group": "navigation"
+            },
+            {
+                "command": "extension.openInExplorer",
+                "when": "view == Codis && viewItem == file",
+                "group": "navigation"
+            }
+        ]
+        },
+        "commands": [
+            {
+                "command": "extension.openInExplorer",
+                "title": "Open in Explorer"
+            }
+        ],
+        "activationEvents": [
+            "onView:Codis"
+        ]
+    },
+    "scripts": {
+        "lint": "eslint .",
+        "pretest": "yarn run lint",
+        "test": "node ./test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.54.0",
+        "@types/glob": "^8.1.0",
+        "@types/mocha": "^10.0.1",
+        "@types/node": "20.2.5",
+        "eslint": "^8.41.0",
+        "glob": "^8.1.0",
+        "mocha": "^10.2.0",
+        "typescript": "^5.1.3",
+        "@vscode/test-electron": "^2.3.2"
+    }
+}
