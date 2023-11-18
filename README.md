@@ -4,6 +4,10 @@
 
 Code formatter extension for Visual Studio Code.
 
+## Limitations
+
+*   Incomplete support for comments and string literals.
+
 ## Version
 
 0.0.1

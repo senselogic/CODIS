@@ -1,11 +1,14 @@
 // -- IMPORTS
 
-const vscode = require( 'vscode' );
+const vscode = require( "vscode" );
 
 // -- VARIABLES
 
-var
-    indentation = '    ';
+let indentation = '    ';
+let screamCaseIdentifierCase = 'SCREAM_CASE';
+let pascalCaseIdentifierCase = 'PascalCase';
+let snakeCaseIdentifierCase = 'snake_case';
+let camelCaseIdentifierCase = 'camelCase';
 
 // -- FUNCTIONS
 
@@ -13,10 +16,7 @@ function getLineLevel(
     line
     )
 {
-    var
-        level;
-
-    level = 0;
+    let level = 0;
 
     while ( line.startsWith( indentation ) )
     {
@@ -45,10 +45,7 @@ function getLevelIndentation(
     level
     )
 {
-    var
-        levelIndentation;
-
-    levelIndentation = "";
+    let levelIndentation = '';
 
     while ( level > 0 )
     {
@@ -62,11 +59,170 @@ function getLevelIndentation(
 
 // ~~
 
+function getProcessedCode(
+    code,
+    codeProcessingFunction
+    )
+{
+    let processedIntervalArray = [];
+    let priorProcessedCharacterIndex = -2;
+    let literalCharacter = '';
+
+    for ( let characterIndex = 0;
+          characterIndex + 1 < code.length;
+          ++characterIndex )
+    {
+        let character = code[ characterIndex ];
+        let nextCharacter = code[ characterIndex + 1 ];
+
+        if ( literalCharacter !== '' )
+        {
+            if ( character === '\\' )
+            {
+                ++characterIndex;
+            }
+            else if ( character === literalCharacter
+                      || ( character === '\n'
+                           && literalCharacter !== '`' ) )
+            {
+                literalCharacter = '';
+            }
+        }
+        else if ( character === '/'
+                  && nextCharacter === '/' )
+        {
+            characterIndex += 2;
+
+            while ( characterIndex < code.length
+                    && code[ characterIndex ] !== '\n' )
+            {
+                ++characterIndex;
+            }
+        }
+        else if ( character === '/'
+                  && nextCharacter === '*' )
+        {
+            characterIndex += 2;
+
+            while ( characterIndex + 1 < code.length
+                    && code[ characterIndex ] !== '*'
+                    && code[ characterIndex + 1 ] !== '/' )
+            {
+                ++characterIndex;
+            }
+        }
+        else
+        {
+            if ( character === '/' )
+            {
+                let priorCode = code.slice( 0, characterIndex ).trimRight();
+
+                if ( priorCode === ''
+                     || priorCode.endsWith( '=' )
+                     || priorCode.endsWith( '<' )
+                     || priorCode.endsWith( '>' )
+                     || priorCode.endsWith( '+' )
+                     || priorCode.endsWith( '-' )
+                     || priorCode.endsWith( '*' )
+                     || priorCode.endsWith( '/' )
+                     || priorCode.endsWith( '%' )
+                     || priorCode.endsWith( '^' )
+                     || priorCode.endsWith( '~' )
+                     || priorCode.endsWith( '&' )
+                     || priorCode.endsWith( '|' )
+                     || priorCode.endsWith( '!' )
+                     || priorCode.endsWith( '?' )
+                     || priorCode.endsWith( ':' )
+                     || priorCode.endsWith( '(' )
+                     || priorCode.endsWith( '[' )
+                     || priorCode.endsWith( '{' )
+                     || priorCode.endsWith( ';' )
+                     || priorCode.endsWith( ',' )
+                     || priorCode.endsWith( ' return' )
+                     || priorCode.endsWith( '\treturn' )
+                     || priorCode.endsWith( '\rreturn' )
+                     || priorCode.endsWith( '\nreturn' )
+                     || priorCode === 'return' )
+                {
+                    literalCharacter = '/';
+
+                    continue;
+                }
+            }
+
+            if ( character === '\''
+                 || character === '"'
+                 || character === '`' )
+            {
+                literalCharacter = character;
+            }
+            else
+            {
+                if ( characterIndex !== priorProcessedCharacterIndex + 1 )
+                {
+                    processedIntervalArray.push( [ characterIndex, characterIndex + 1 ] );
+                }
+                else
+                {
+                    processedIntervalArray[ processedIntervalArray.length - 1 ][ 1 ] = characterIndex + 1;
+                }
+
+                priorProcessedCharacterIndex = characterIndex;
+            }
+        }
+    }
+
+    let processedIntervalCount = processedIntervalArray.length;
+
+    if ( processedIntervalCount === 0 )
+    {
+        return code;
+    }
+    else
+    {
+        let processedCode = code.slice( 0, processedIntervalArray[ 0 ] );
+
+        for ( let processedIntervalIndex = 0;
+              processedIntervalIndex < processedIntervalCount;
+              ++processedIntervalIndex )
+        {
+            let processedInterval = processedIntervalArray[ processedIntervalIndex ];
+
+            if ( processedIntervalIndex > 0 )
+            {
+                let priorProcessedInterval = processedIntervalArray[ processedIntervalIndex - 1 ];
+
+                processedCode += code.slice( priorProcessedInterval[ 1 ], processedInterval[ 0 ] );
+            }
+
+            processedCode
+                += codeProcessingFunction(
+                       code.slice( processedInterval[ 0 ], processedInterval[ 1 ] )
+                       );
+        }
+
+        processedCode += code.slice( processedIntervalArray[ processedIntervalCount - 1 ][ 1 ] );
+
+        return processedCode;
+    }
+}
+
+// ~~
+
 function replaceTabs(
     code
     )
 {
-    return code.replaceAll( "\t", indentation );
+    return code.replaceAll( '\t', indentation );
+}
+
+// ~~
+
+function removeComments(
+    code
+    )
+{
+    return code.replace( /\/\/.*$/gm, '' );
 }
 
 // ~~
@@ -83,13 +239,13 @@ function splitBraces(
                 /^( *)([^\n]*)\{$/gm,
                 function ( match, indentation, code )
                 {
-                    if ( code === "" )
+                    if ( code === '' )
                     {
-                        return indentation + "{";
+                        return indentation + '{';
                     }
                     else
                     {
-                        return indentation + code + "\n" + indentation + "{";
+                        return indentation + code + '\n' + indentation + '{';
                     }
                 }
                 )
@@ -97,7 +253,7 @@ function splitBraces(
                 /^( *)\} *else$/gm,
                 function ( match, indentation )
                 {
-                    return indentation + "}\n" + indentation + "else";
+                    return indentation + '}\n' + indentation + 'else';
                 }
                 )
             .replace(
@@ -111,7 +267,7 @@ function splitBraces(
                     }
                     else
                     {
-                        return indentation + "}\n" + indentation + code;
+                        return indentation + '}\n' + indentation + code;
                     }
                 }
                 )
@@ -132,16 +288,35 @@ function splitBrackets(
                 /^( *)([^\n]*\() *\[$/gm,
                 function ( match, indentation, code )
                 {
-                    return indentation + code + "\n" + indentation + "[";
+                    return indentation + code + '\n' + indentation + '[';
                 }
                 )
             .replace(
                 /^( *)\] *\)(.*)$/gm,
                 function ( match, indentation, code )
                 {
-                    return indentation + "]\n" + indentation + ")" + code;
+                    return indentation + ']\n' + indentation + ')' + code;
                 }
                 )
+        );
+}
+
+// ~~
+
+function doubleLeadingSpaces(
+    code
+    )
+{
+    code = replaceTabs( code );
+
+    return (
+        code.replace(
+            /^( +)/gm,
+            function ( match )
+            {
+                return match.replaceAll( ' ', '  ' );
+            }
+            )
         );
 }
 
@@ -157,7 +332,7 @@ function removeTrailingSpaces(
         code
             .replace(
                 /[ \t]+$/gm,
-                ""
+                ''
                 )
         );
 }
@@ -172,7 +347,7 @@ function removeTrailingCommas(
         code
             .replace(
                 /,(?=\s*[)\]}])/gm,
-                ""
+                ''
                 )
         );
 }
@@ -183,34 +358,19 @@ function indentBraces(
     code
     )
 {
-    var
-        addedIndentation,
-        level,
-        levelArray,
-        levelIndentation,
-        line,
-        lineArray,
-        lineIndentation,
-        lineIndex,
-        nextLevel,
-        nextLevelArray,
-        nextLine,
-        nextLineIndex,
-        trimmedLine;
+    let lineArray = code.split( '\n' );
 
-    lineArray = code.split( "\n" );
+    let levelArray = [];
+    let nextLevelArray = [];
+    let level = 0;
 
-    levelArray = [];
-    nextLevelArray = [];
-    level = 0;
-
-    for ( lineIndex = 0;
+    for ( let lineIndex = 0;
           lineIndex < lineArray.length;
           ++lineIndex )
     {
-        line = lineArray[ lineIndex ].trimRight();
+        let line = lineArray[ lineIndex ].trimRight();
 
-        if ( line !== "" )
+        if ( line !== '' )
         {
             level = getLineLevel( line );
 
@@ -218,33 +378,33 @@ function indentBraces(
         }
     }
 
-    for ( lineIndex = 0;
+    for ( let lineIndex = 0;
           lineIndex < lineArray.length;
           ++lineIndex )
     {
-        line = lineArray[ lineIndex ].trimRight();
-        trimmedLine = line.trimLeft();
+        let line = lineArray[ lineIndex ].trimRight();
+        let trimmedLine = line.trimLeft();
 
         lineArray[ lineIndex ] = line;
 
-        nextLevel = level;
+        let nextLevel = level;
 
-        while ( trimmedLine.endsWith( "(" )
-                || trimmedLine.endsWith( "[" )
-                || trimmedLine.endsWith( "{" ) )
+        while ( trimmedLine.endsWith( '(' )
+                || trimmedLine.endsWith( '[' )
+                || trimmedLine.endsWith( '{' ) )
         {
             ++nextLevel;
 
             trimmedLine = trimmedLine.slice( 0, -1 );
         }
 
-        while ( trimmedLine.startsWith( ")" )
-                || trimmedLine.startsWith( "]" )
-                || trimmedLine.startsWith( "}" ) )
+        while ( trimmedLine.startsWith( ')' )
+                || trimmedLine.startsWith( ']' )
+                || trimmedLine.startsWith( '}' ) )
         {
             --nextLevel;
 
-            if ( trimmedLine.startsWith( "}" ) )
+            if ( trimmedLine.startsWith( '}' ) )
             {
                 --level;
             }
@@ -257,26 +417,26 @@ function indentBraces(
         level = nextLevel;
     }
 
-    for ( lineIndex = 0;
+    for ( let lineIndex = 0;
           lineIndex < lineArray.length;
           ++lineIndex )
     {
-        line = lineArray[ lineIndex ];
-        level = levelArray[ lineIndex ];
+        let line = lineArray[ lineIndex ];
+        let level = levelArray[ lineIndex ];
 
-        lineIndentation = getLineIndentation( line );
-        levelIndentation = getLevelIndentation( level );
+        let lineIndentation = getLineIndentation( line );
+        let levelIndentation = getLevelIndentation( level );
 
         if ( lineIndentation.length < levelIndentation.length )
         {
-            addedIndentation = levelIndentation.slice( 0, levelIndentation.length - lineIndentation.length );
+            let addedIndentation = levelIndentation.slice( 0, levelIndentation.length - lineIndentation.length );
 
-            for ( nextLineIndex = lineIndex;
+            for ( let nextLineIndex = lineIndex;
                   nextLineIndex < lineArray.length;
                   ++nextLineIndex )
             {
-                nextLine = lineArray[ nextLineIndex ];
-                nextLevel = levelArray[ nextLineIndex ];
+                let nextLine = lineArray[ nextLineIndex ];
+                let nextLevel = levelArray[ nextLineIndex ];
 
                 if ( nextLevel >= level )
                 {
@@ -291,7 +451,7 @@ function indentBraces(
         }
     }
 
-    return lineArray.join( "\n" );
+    return lineArray.join( '\n' );
 }
 
 // ~~
@@ -301,11 +461,11 @@ function isBlankCharacter(
     )
 {
     return (
-        character === ""
-        || character === " "
-        || character === "\t"
-        || character === "\r"
-        || character === "\n"
+        character === ''
+        || character === ' '
+        || character === '\t'
+        || character === '\r'
+        || character === '\n'
         );
 }
 
@@ -317,129 +477,38 @@ function spaceBlocks(
     closingCharacter
     )
 {
-    var
-        character,
-        characterIndex,
-        literalCharacter,
-        nextCharacter,
-        priorCode;
-
     code = removeTrailingSpaces( replaceTabs( code ) );
 
-    literalCharacter = "";
-
-    for ( characterIndex = 0;
-          characterIndex + 1 < code.length;
-          ++characterIndex )
-    {
-        character = code[ characterIndex ];
-        nextCharacter = code[ characterIndex + 1 ];
-
-        if ( character === '\n'
-             && literalCharacter !== "`" )
-        {
-            literalCharacter = "";
-        }
-
-        if ( literalCharacter !== "" )
-        {
-            if ( character === "\\" )
+    return (
+        getProcessedCode(
+            code,
+            ( code ) =>
             {
-                ++characterIndex;
-            }
-            else if ( character === literalCharacter )
-            {
-                literalCharacter = "";
-            }
-        }
-        else if ( character === "/"
-                  && nextCharacter === "/" )
-        {
-            characterIndex += 2;
-
-            while ( characterIndex < code.length
-                    && code[ characterIndex ] !== '\n' )
-            {
-                ++characterIndex;
-            }
-        }
-        else if ( character === "/"
-                  && nextCharacter === "*" )
-        {
-            characterIndex += 2;
-
-            while ( characterIndex + 1 < code.length
-                    && code[ characterIndex ] !== '*'
-                    && code[ characterIndex + 1 ] !== '/' )
-            {
-                ++characterIndex;
-            }
-        }
-        else
-        {
-            if ( character === "/"
-                 && nextCharacter !== "/" )
-            {
-                priorCode = code.slice( 0, characterIndex ).trimRight();
-
-                if ( priorCode === ""
-                     || priorCode.endsWith( "=" )
-                     || priorCode.endsWith( "<" )
-                     || priorCode.endsWith( ">" )
-                     || priorCode.endsWith( "+" )
-                     || priorCode.endsWith( "-" )
-                     || priorCode.endsWith( "*" )
-                     || priorCode.endsWith( "/" )
-                     || priorCode.endsWith( "%" )
-                     || priorCode.endsWith( "^" )
-                     || priorCode.endsWith( "~" )
-                     || priorCode.endsWith( "&" )
-                     || priorCode.endsWith( "|" )
-                     || priorCode.endsWith( "!" )
-                     || priorCode.endsWith( "?" )
-                     || priorCode.endsWith( ":" )
-                     || priorCode.endsWith( "(" )
-                     || priorCode.endsWith( "[" )
-                     || priorCode.endsWith( "{" )
-                     || priorCode.endsWith( ";" )
-                     || priorCode.endsWith( "," )
-                     || priorCode.endsWith( " return" )
-                     || priorCode.endsWith( "\treturn" )
-                     || priorCode.endsWith( "\rreturn" )
-                     || priorCode.endsWith( "\nreturn" )
-                     || priorCode === "return" )
+                for ( let characterIndex = 0;
+                      characterIndex + 1 < code.length;
+                      ++characterIndex )
                 {
-                    literalCharacter = "/";
+                    let character = code[ characterIndex ];
+                    let nextCharacter = code[ characterIndex + 1 ];
 
-                    continue;
+                    if ( ( character === openingCharacter
+                           && nextCharacter !== closingCharacter
+                           && !isBlankCharacter( nextCharacter ) )
+                         || ( nextCharacter === closingCharacter
+                              && character !== openingCharacter
+                              && !isBlankCharacter( character ) ) )
+                    {
+                        code
+                            = code.slice( 0, characterIndex + 1 )
+                              + ' '
+                              + code.slice( characterIndex + 1 );
+                    }
                 }
-            }
 
-            if ( character === "'"
-                 || character === "\""
-                 || character === "`" )
-            {
-                literalCharacter = character;
+                return code;
             }
-            else
-            {
-                if ( ( character === openingCharacter
-                       && nextCharacter !== closingCharacter
-                       && !isBlankCharacter( nextCharacter ) )
-                     || ( nextCharacter === closingCharacter
-                          && character !== openingCharacter
-                          && !isBlankCharacter( character ) ) )
-                {
-                    code
-                        = code.slice( 0, characterIndex + 1 )
-                          + " "
-                          + code.slice( characterIndex + 1 );
-                }
-            }
-        }
-    }
-
-    return code;
+            )
+        );
 }
 
 // ~~
@@ -448,7 +517,7 @@ function spaceBraces(
     code
     )
 {
-    return spaceBlocks( code, "{", "}" );
+    return spaceBlocks( code, '{', '}' );
 }
 
 // ~~
@@ -457,7 +526,7 @@ function spaceBrackets(
     code
     )
 {
-    return spaceBlocks( code, "[", "]" );
+    return spaceBlocks( code, '[', ']' );
 }
 
 // ~~
@@ -466,7 +535,7 @@ function spaceParentheses(
     code
     )
 {
-    return spaceBlocks( code, "(", ")" );
+    return spaceBlocks( code, '(', ')' );
 }
 
 // ~~
@@ -475,22 +544,15 @@ function fixEmptyLines(
     code
     )
 {
-    var
-        line,
-        lineArray,
-        lineIndex,
-        nextLine,
-        priorLine;
+    let lineArray = [];
+    let priorLine = '';
 
-    lineArray = [];
-    priorLine = "";
-
-    for ( line of code.split( "\n" ) )
+    for ( let line of code.split( '\n' ) )
     {
         line = line.trimRight();
 
-        if ( line !== ""
-             || priorLine !== "" )
+        if ( line !== ''
+             || priorLine !== '' )
         {
             lineArray.push( line );
         }
@@ -500,52 +562,179 @@ function fixEmptyLines(
 
     code
         = lineArray
-              .join( "\n" )
-              .replaceAll( "{\n\n", "{\n" )
-              .replaceAll( "[\n\n", "[\n" )
-              .replaceAll( "(\n\n", "(\n" )
-              .replace( /\n\n( *)\}/g, "\n$1}" )
-              .replace( /\n\n( *)\]/g, "\n$1]" )
-              .replace( /\n\n( *)\)/g, "\n$1)" );
+              .join( '\n' )
+              .replaceAll( '{\n\n', '{\n' )
+              .replaceAll( '[\n\n', '[\n' )
+              .replaceAll( '(\n\n', '(\n' )
+              .replace( /\n\n( *)\}/g, '\n$1}' )
+              .replace( /\n\n( *)\]/g, '\n$1]' )
+              .replace( /\n\n( *)\)/g, '\n$1)' );
 
-    lineArray = code.split( "\n" );
+    lineArray = code.split( '\n' );
 
-    for ( lineIndex = 0;
+    for ( let lineIndex = 0;
           lineIndex < lineArray.length - 1;
           ++lineIndex )
     {
-        line = lineArray[ lineIndex ].trim();
-        nextLine = lineArray[ lineIndex + 1 ].trim();
+        let line = lineArray[ lineIndex ].trim();
+        let nextLine = lineArray[ lineIndex + 1 ].trim();
 
-        if ( line !== ""
-             && nextLine !== "" )
+        if ( line !== ''
+             && nextLine !== '' )
         {
-            if ( ( line.startsWith( "// -- " )
-                   || line.startsWith( "// ~~" )
-                   || ( line === "}"
-                        && nextLine !== "else"
-                        && !nextLine.startsWith( "else " )
-                        && !nextLine.startsWith( "}" )
-                        && !nextLine.startsWith( "]" )
-                        && !nextLine.startsWith( ")" )
-                        && !nextLine.startsWith( "<" ) ) )
-                 || ( line !== "{"
-                      && ( nextLine.startsWith( "// -- " )
-                           || nextLine.startsWith( "// ~~" )
-                           || nextLine.startsWith( "if " )
-                           || nextLine.startsWith( "do " )
-                           || ( line !== "}"
-                                && nextLine.startsWith( "while " ) )
-                           || nextLine.startsWith( "for " )
-                           || nextLine.startsWith( "return " )
-                           || nextLine == "return" ) ) )
+            if ( ( line.startsWith( '// -- ' )
+                   || line.startsWith( '// ~~' )
+                   || ( line === '}'
+                        && nextLine !== 'else'
+                        && !nextLine.startsWith( 'else ' )
+                        && !nextLine.startsWith( '}' )
+                        && !nextLine.startsWith( ']' )
+                        && !nextLine.startsWith( ')' )
+                        && !nextLine.startsWith( '<' ) ) )
+                 || ( line !== '{'
+                      && ( nextLine.startsWith( '// -- ' )
+                           || nextLine.startsWith( '// ~~' )
+                           || nextLine.startsWith( 'if ' )
+                           || nextLine.startsWith( 'do ' )
+                           || ( line !== '}'
+                                && nextLine.startsWith( 'while ' ) )
+                           || nextLine.startsWith( 'for ' )
+                           || nextLine.startsWith( 'return ' )
+                           || nextLine == 'return' ) ) )
             {
-                lineArray.splice( lineIndex + 1, 0, "" );
+                lineArray.splice( lineIndex + 1, 0, '' );
             }
         }
     }
 
-    return lineArray.join( "\n" );
+    return lineArray.join( '\n' );
+}
+
+// ~~
+
+function getIdentifierCase(
+    identifier
+    )
+{
+    if ( /^[A-Z][A-Z0-9_]+$/.test( identifier ) )
+    {
+        return 'SCREAM_CASE';
+    }
+    else if ( /^[A-Z][a-zA-Z0-9]*$/.test( identifier ) )
+    {
+        return 'PascalCase';
+    }
+    else if ( /^[a-z][a-z0-9_]*$/.test( identifier ) )
+    {
+        return 'snake_case';
+    }
+    else if ( /^[a-z][a-zA-Z0-9]*$/.test( identifier ) )
+    {
+        return 'camelCase';
+    }
+    else
+    {
+        return '';
+    }
+}
+
+// ~~
+
+function getIdentifierWordArray(
+    identifier,
+    identifierCase
+    )
+{
+    if ( identifierCase === 'SCREAM_CASE'
+         || identifierCase === 'snake_case' )
+    {
+        return identifier.split( '_' );
+    }
+    else if ( identifierCase === 'PascalCase'
+              || identifierCase === 'camelCase' )
+    {
+        return identifier.split( /(?=[A-Z])/ ).map( word => word.toLowerCase() );
+    }
+    else
+    {
+        return [ identifier ];
+    }
+}
+
+// ~~
+
+function getFixedIdentifier(
+    identifier,
+    oldIdentifierCase,
+    newIdentifierCase
+    )
+{
+    let identifierWordArray = getIdentifierWordArray( identifier, oldIdentifierCase );
+
+    if ( newIdentifierCase === 'SCREAM_CASE' )
+    {
+        return identifierWordArray.join( '_' ).toUpperCase();
+    }
+    else if ( newIdentifierCase === 'PascalCase' )
+    {
+        return identifierWordArray.map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
+    }
+    else if ( newIdentifierCase === 'snake_case' )
+    {
+        return identifierWordArray.join( '_' ).toLowerCase();
+    }
+    else if ( newIdentifierCase === 'camelCase' )
+    {
+        return identifierWordArray[ 0 ].toLowerCase() + identifierWordArray.slice( 1 ).map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() ).join( '' );
+    }
+    else
+    {
+        return identifier;
+    }
+}
+
+// ~~
+
+function fixIdentifiers(
+    code
+    )
+{
+    return (
+        getProcessedCode(
+            code,
+            ( code ) =>
+            {
+                return code.replace(
+                    /\w+/g,
+                    function( identifier )
+                    {
+                        let identifierCase = getIdentifierCase( identifier );
+
+                        if ( identifierCase === 'SCREAM_CASE' )
+                        {
+                            return getFixedIdentifier( identifier, identifierCase, screamCaseIdentifierCase );
+                        }
+                        else if ( identifierCase === 'PascalCase' )
+                        {
+                            return getFixedIdentifier( identifier, identifierCase, pascalCaseIdentifierCase );
+                        }
+                        else if ( identifierCase === 'snake_case' )
+                        {
+                            return getFixedIdentifier( identifier, identifierCase, snakeCaseIdentifierCase );
+                        }
+                        else if ( identifierCase === 'camelCase' )
+                        {
+                            return getFixedIdentifier( identifier, identifierCase, camelCaseIdentifierCase );
+                        }
+                        else
+                        {
+                            return identifier;
+                        }
+                    }
+                    );
+            }
+            )
+        );
 }
 
 // ~~
@@ -614,14 +803,20 @@ function activate(
     context.subscriptions.push(
         vscode.commands.registerCommand(
             "extension.fixCode",
-            () =>
-            {
-                fixCode();
-            }
+            fixCode
             )
         );
 }
 
+function deactivate(
+    )
+{
+}
+
 // -- EXPORTS
 
-exports.activate = activate;
+module.exports =
+    {
+        activate,
+        deactivate
+    };
