@@ -2,9 +2,10 @@
     "name": "Codis",
     "displayName": "Codis",
     "description": "Code formatter",
+    "icon": "ICON/codis.png",
     "publisher": "SenseLogic",
     "repository": "https://github.com/senselogic/CODIS.git",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.84.0"
     },
