@@ -180,7 +180,7 @@ function getProcessedCode(
     }
     else
     {
-        let processedCode = code.slice( 0, processedIntervalArray[ 0 ] );
+        let processedCode = code.slice( 0, processedIntervalArray[ 0 ][ 0 ] );
 
         for ( let processedIntervalIndex = 0;
               processedIntervalIndex < processedIntervalCount;
@@ -582,15 +582,16 @@ function fixEmptyLines(
         if ( line !== ''
              && nextLine !== '' )
         {
-            if ( ( line.startsWith( '// -- ' )
-                   || line.startsWith( '// ~~' )
-                   || ( line === '}'
-                        && nextLine !== 'else'
-                        && !nextLine.startsWith( 'else ' )
-                        && !nextLine.startsWith( '}' )
-                        && !nextLine.startsWith( ']' )
-                        && !nextLine.startsWith( ')' )
-                        && !nextLine.startsWith( '<' ) ) )
+            if ( line.startsWith( '// -- ' )
+                 || line.startsWith( '// ~~' )
+                 || ( line === '}'
+                      && nextLine !== 'else'
+                      && !nextLine.startsWith( 'else ' )
+                      && !nextLine.startsWith( 'while ' )
+                      && !nextLine.startsWith( '}' )
+                      && !nextLine.startsWith( ']' )
+                      && !nextLine.startsWith( ')' )
+                      && !nextLine.startsWith( '<' ) )
                  || ( line !== '{'
                       && ( nextLine.startsWith( '// -- ' )
                            || nextLine.startsWith( '// ~~' )
