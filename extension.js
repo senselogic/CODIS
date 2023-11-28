@@ -588,6 +588,7 @@ function fixEmptyLines(
                       && nextLine !== 'else'
                       && !nextLine.startsWith( 'else ' )
                       && !nextLine.startsWith( 'while ' )
+                      && !nextLine.startsWith( 'catch ' )
                       && !nextLine.startsWith( '}' )
                       && !nextLine.startsWith( ']' )
                       && !nextLine.startsWith( ')' )
@@ -597,9 +598,11 @@ function fixEmptyLines(
                            || nextLine.startsWith( '// ~~' )
                            || nextLine.startsWith( 'if ' )
                            || nextLine.startsWith( 'do ' )
-                           || ( line !== '}'
-                                && nextLine.startsWith( 'while ' ) )
+                           || ( line !== '}' && nextLine.startsWith( 'while ' ) )
                            || nextLine.startsWith( 'for ' )
+                           || nextLine.startsWith( 'try ' )
+                           || nextLine == 'try'
+                           || ( line !== '}' && nextLine.startsWith( 'catch ' ) )
                            || nextLine.startsWith( 'return ' )
                            || nextLine == 'return' ) ) )
             {
