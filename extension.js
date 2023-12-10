@@ -243,6 +243,10 @@ function splitBraces(
                     {
                         return indentation + '{';
                     }
+                    else if ( code.startsWith( '//' ) )
+                    {
+                        return indentation + code + '{';
+                    }
                     else
                     {
                         return indentation + code + '\n' + indentation + '{';
@@ -262,6 +266,10 @@ function splitBraces(
                 {
                     if ( code.startsWith( ',' )
                          || code.startsWith( ';' ) )
+                    {
+                        return indentation + '}' + code;
+                    }
+                    else if ( code.startsWith( '//' ) )
                     {
                         return indentation + '}' + code;
                     }
@@ -383,9 +391,14 @@ function indentBraces(
           ++lineIndex )
     {
         let line = lineArray[ lineIndex ].trimRight();
+        lineArray[ lineIndex ] = line;
+
         let trimmedLine = line.trimLeft();
 
-        lineArray[ lineIndex ] = line;
+        if ( trimmedLine.startsWith( '//' ) )
+        {
+            trimmedLine = '';
+        }
 
         let nextLevel = level;
 
@@ -811,6 +824,8 @@ function activate(
             )
         );
 }
+
+// ~~
 
 function deactivate(
     )
