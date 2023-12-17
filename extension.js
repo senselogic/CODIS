@@ -497,6 +497,8 @@ function spaceBlocks(
             code,
             ( code ) =>
             {
+                code = '\b' + code + '\b';
+
                 for ( let characterIndex = 0;
                       characterIndex + 1 < code.length;
                       ++characterIndex )
@@ -518,7 +520,7 @@ function spaceBlocks(
                     }
                 }
 
-                return code;
+                return code.slice( 1, -1 );
             }
             )
         );
@@ -549,6 +551,24 @@ function spaceParentheses(
     )
 {
     return spaceBlocks( code, '(', ')' );
+}
+
+// ~~
+
+function spaceCommas(
+    code
+    )
+{
+    return spaceBlocks( code, ',', '' );
+}
+
+// ~~
+
+function spaceSemicolons(
+    code
+    )
+{
+    return spaceBlocks( code, ';', '' );
 }
 
 // ~~
