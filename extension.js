@@ -218,11 +218,20 @@ function replaceTabs(
 
 // ~~
 
-function removeComments(
+function removeSlashComments(
     code
     )
 {
-    return code.replace( /\/\/.*$/gm, '' );
+    return code.replace( /\/\/[^\n'"`]*$/gm, '' );
+}
+
+// ~~
+
+function removeHashComments(
+    code
+    )
+{
+    return code.replace( /\#[^\n'"`]*$/gm, '' );
 }
 
 // ~~
@@ -484,6 +493,31 @@ function isBlankCharacter(
 
 // ~~
 
+function spaceAssignments(
+    code
+    )
+{
+    code = removeTrailingSpaces( replaceTabs( code ) );
+
+    return (
+        removeTrailingSpaces(
+            getProcessedCode(
+                code,
+                ( code ) =>
+                {
+                    return (
+                        code
+                            .replace( /([a-zA-Z0-9_])=(?=[a-zA-Z0-9_"'])/g, '$1 = ' )
+                            .replace( /([a-zA-Z0-9_])=$/g, '$1 = ' )
+                        );
+                }
+                )
+            )
+        );
+}
+
+// ~~
+
 function spaceBlocks(
     code,
     openingCharacter,
@@ -622,6 +656,8 @@ function fixEmptyLines(
                       && !nextLine.startsWith( 'else ' )
                       && !nextLine.startsWith( 'while ' )
                       && !nextLine.startsWith( 'catch ' )
+                      && nextLine !=='finally'
+                      && !nextLine.startsWith( 'finally ' )
                       && !nextLine.startsWith( '}' )
                       && !nextLine.startsWith( ']' )
                       && !nextLine.startsWith( ')' )
@@ -636,6 +672,8 @@ function fixEmptyLines(
                            || nextLine.startsWith( 'try ' )
                            || nextLine == 'try'
                            || ( line !== '}' && nextLine.startsWith( 'catch ' ) )
+                           || ( line !== '}' && nextLine == 'finally ' )
+                           || ( line !== '}' && nextLine.startsWith( 'finally ' ) )
                            || nextLine.startsWith( 'return ' )
                            || nextLine == 'return' ) ) )
             {
