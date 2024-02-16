@@ -1,2 +1,2 @@
-vsce package
+call vsce package
 pause
