@@ -674,8 +674,9 @@ function fixEmptyLines(
                            || ( line !== '}' && nextLine.startsWith( 'catch ' ) )
                            || ( line !== '}' && nextLine == 'finally ' )
                            || ( line !== '}' && nextLine.startsWith( 'finally ' ) )
+                           || nextLine == 'break;'
                            || nextLine.startsWith( 'return ' )
-                           || nextLine == 'return' ) ) )
+                           || nextLine == 'return;' ) ) )
             {
                 lineArray.splice( lineIndex + 1, 0, '' );
             }
