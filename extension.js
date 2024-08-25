@@ -607,6 +607,23 @@ function spaceSemicolons(
 
 // ~~
 
+function spaceColons(
+    code
+    )
+{
+    return (
+        getProcessedCode(
+            code,
+            ( code ) =>
+            {
+                return code.replace( /([^:\s]):/gm, '$1 :' ).replace( /:([^:\s])/gm, ': $1' );
+            }
+            )
+        );
+}
+
+// ~~
+
 function fixEmptyLines(
     code
     )
@@ -815,26 +832,6 @@ function fixIdentifiers(
 
 // ~~
 
-function getFixedCode(
-    code
-    )
-{
-    code = replaceTabs( code );
-    code = removeTrailingSpaces( code );
-    code = removeTrailingCommas( code );
-    code = splitBraces( code );
-    code = splitBrackets( code );
-    code = indentBraces( code );
-    code = spaceBraces( code );
-    code = spaceBrackets( code );
-    code = spaceParentheses( code );
-    code = fixEmptyLines( code );
-
-    return code;
-}
-
-// ~~
-
 function fixCode(
     )
 {
@@ -845,8 +842,27 @@ function fixCode(
         let document = editor.document;
         let selection = editor.selection;
         let code = document.getText( selection.isEmpty ? undefined : selection );
+        let fileName = document.fileName;
+        let fileExtension = fileName.split( '.' ).pop();
 
-        code = getFixedCode( code );
+        code = replaceTabs( code );
+        code = removeTrailingSpaces( code );
+        code = removeTrailingCommas( code );
+        code = splitBraces( code );
+        code = splitBrackets( code );
+        code = indentBraces( code );
+        code = spaceBraces( code );
+        code = spaceBrackets( code );
+        code = spaceParentheses( code );
+        code = spaceCommas( code );
+        code = spaceSemicolons( code );
+
+        if ( fileExtension !== 'svelte' )
+        {
+            code = spaceColons( code );
+        }
+
+        code = fixEmptyLines( code );
 
         editor.edit(
             ( editBuilder ) =>
